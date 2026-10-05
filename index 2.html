@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090909">
+<link rel="manifest" href="manifest.json">
+<title>CareSend</title>
+<style>
+:root{--bg:#090909;--card:#171717;--gold:#e5bd70;--cream:#fff8e9;--muted:#bdb7ac}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:white;font-family:-apple-system,BlinkMacSystemFont,"Tahoma",sans-serif}
+.app{max-width:520px;margin:auto;min-height:100vh;padding:calc(18px + env(safe-area-inset-top)) 18px calc(30px + env(safe-area-inset-bottom))}
+.brand{text-align:center;margin:12px 0 24px}.brand h1{font-family:Georgia,serif;color:var(--gold);font-size:38px;margin:0}.brand p{color:var(--muted);margin:5px}
+.panel{background:linear-gradient(180deg,#1a1a1a,#111);border:1px solid #3a3327;border-radius:24px;padding:18px;margin-bottom:15px}
+label{display:block;margin-bottom:8px;font-weight:700} input{width:100%;font-size:20px;padding:15px;border:0;border-radius:14px;background:var(--cream);direction:ltr;text-align:center;outline:none}
+h2{font-size:17px;margin:0 0 12px}.services{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.service{background:#202020;border:1px solid #383838;border-radius:14px;padding:12px;cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none}
+.service input{width:auto;accent-color:#d8ae61}.service:has(input:checked){border-color:var(--gold);background:#2b2419}
+button{width:100%;border:0;border-radius:17px;padding:16px;font-size:18px;font-weight:800;background:linear-gradient(#ffe3a5,#d6a54c);color:#111;cursor:pointer}
+button:disabled{opacity:.5}.preview{white-space:pre-wrap;background:var(--cream);color:#1a1a1a;padding:15px;border-radius:15px;line-height:1.9;font-size:14px;max-height:300px;overflow:auto}
+.status{text-align:center;margin-top:12px;min-height:24px}.small{font-size:12px;color:var(--muted);line-height:1.7;margin-top:12px}
+</style>
+</head>
+<body><main class="app">
+<div class="brand"><h1>CareSend ✦</h1><p>ارسال مراقبت‌های بعد از خدمات</p></div>
+<section class="panel"><label for="phone">شماره تماس مشتری</label><input id="phone" inputmode="tel" placeholder="0912 345 6789" maxlength="14"></section>
+<section class="panel"><h2>خدمات انجام‌شده</h2><div class="services" id="services"></div></section>
+<section class="panel"><h2>پیش‌نمایش پیام</h2><div class="preview" id="preview">یک یا چند خدمت را انتخاب کنید.</div></section>
+<button id="send">✈︎ ارسال SMS مراقبت‌ها</button>
+<div class="status" id="status"></div>
+<p class="small">نسخه آزمایشی: ارسال واقعی فقط بعد از تنظیم آدرس سرور و Secret کاوه‌نگار فعال می‌شود. کلید API را داخل این فایل یا مرورگر قرار ندهید.</p>
+</main>
+<script>
+const templates={
+"فیلر لب":"سلام وقت بخیر 🌸\nمراقبت بعد از فیلر لب: طبق دستور پزشک از فشار و دستکاری ناحیه خودداری کنید. مراقبت‌ها و داروهای تجویزشده را دقیق انجام دهید. در صورت درد شدید، تغییر رنگ غیرعادی پوست یا علائم نگران‌کننده فوراً با مرکز/پزشک تماس بگیرید.",
+"فیلر صورت":"سلام وقت بخیر 🌸\nمراقبت بعد از فیلر صورت: ناحیه تزریق را دستکاری یا ماساژ ندهید مگر با دستور پزشک. توصیه‌های پزشک را رعایت کنید و در صورت علائم غیرعادی فوراً تماس بگیرید.",
+"بوتاکس":"سلام وقت بخیر 🌸\nمراقبت بعد از بوتاکس: محل تزریق را فشار یا ماساژ ندهید و دستورهای پزشک را رعایت کنید. ارزیابی نتیجه معمولاً طبق پروتکل مرکز انجام می‌شود. در صورت علائم غیرعادی با پزشک تماس بگیرید.",
+"PRP صورت":"سلام وقت بخیر 🌸\nمراقبت بعد از PRP صورت: پوست را طبق دستور پزشک مراقبت کنید، از دستکاری ناحیه بپرهیزید و محصولات توصیه‌شده مرکز را طبق دستور استفاده کنید. برنامه جلسات را طبق نظر پزشک ادامه دهید.",
+"PRP مو":"سلام وقت بخیر 🌸\nمراقبت بعد از PRP مو: پوست سر را دستکاری نکنید و شست‌وشو و محصولات مو را طبق دستور پزشک انجام دهید. زمان جلسه بعدی طبق پروتکل درمانی مرکز تعیین می‌شود.",
+"مزوتراپی مو":"سلام وقت بخیر 🌸\nمراقبت بعد از مزوتراپی مو: ناحیه درمان را دستکاری نکنید و مراقبت‌ها و محصولات تجویزشده را طبق دستور پزشک انجام دهید.",
+"مزوتراپی جوانساز":"سلام وقت بخیر 🌸\nمراقبت بعد از مزوتراپی جوانساز: از دستکاری پوست خودداری کنید و روتین پس از درمان را مطابق دستور پزشک انجام دهید.",
+"مزوتراپی ضدلک":"سلام وقت بخیر 🌸\nمراقبت بعد از مزوتراپی ضدلک: ضدآفتاب و محصولات تجویزشده را مطابق دستور پزشک استفاده کنید و از دستکاری پوست خودداری کنید.",
+"مزوژل":"سلام وقت بخیر 🌸\nمراقبت بعد از مزوژل: محل تزریق را دستکاری یا ماساژ ندهید مگر با دستور پزشک و مراقبت‌های تجویزشده را رعایت کنید.",
+"پروفایلو":"سلام وقت بخیر 🌸\nمراقبت بعد از پروفایلو: محل‌های تزریق را دستکاری نکنید و دستورهای پزشک را رعایت کنید. برنامه جلسه بعدی طبق نظر پزشک تعیین می‌شود.",
+"میکروبلیدینگ ابرو":"سلام وقت بخیر 🌸\nمراقبت بعد از میکروبلیدینگ: مراقبت و شست‌وشوی ابرو را دقیقاً طبق دستور پیگمنتر انجام دهید و پوسته‌ها را نکنید.",
+"شیدینگ لب":"سلام وقت بخیر 🌸\nمراقبت بعد از شیدینگ لب: لب‌ها را دستکاری نکنید و مراقبت و محصولات توصیه‌شده توسط پیگمنتر را طبق دستور انجام دهید.",
+"بن‌مژه / خط چشم":"سلام وقت بخیر 🌸\nمراقبت بعد از آرایش دائم چشم: چشم و ناحیه کارشده را دستکاری نکنید و مراقبت‌های اعلام‌شده توسط پیگمنتر را رعایت کنید.",
+"لیزر موهای زائد":"سلام وقت بخیر 🌸\nمراقبت بعد از لیزر: از تحریک و دستکاری پوست خودداری کنید و مراقبت‌های اعلام‌شده توسط اپراتور/پزشک را رعایت کنید.",
+"فیشال":"سلام وقت بخیر 🌸\nمراقبت بعد از فیشال: روتین توصیه‌شده برای پوستتان را رعایت کنید و در صورت حساسیت غیرعادی با مرکز تماس بگیرید.",
+"اسپارتینا":"سلام وقت بخیر 🌸\nمراقبت بعد از جلسه اسپارتینا: توصیه‌های اختصاصی مرکز و پزشک را رعایت کنید و جلسه بعدی را طبق برنامه درمانی هماهنگ کنید."
+};
+const box=document.getElementById('services'), preview=document.getElementById('preview'), status=document.getElementById('status');
+Object.keys(templates).forEach(s=>{box.insertAdjacentHTML('beforeend',`<label class="service"><input type="checkbox" value="${s}"><span>${s}</span></label>`)});
+function selected(){return [...box.querySelectorAll('input:checked')].map(x=>x.value)}
+function render(){let s=selected();preview.textContent=s.length?s.map(x=>`【${x}】\n${templates[x]}`).join("\n\n"):"یک یا چند خدمت را انتخاب کنید."}
+box.addEventListener('change',render);
+document.getElementById('send').onclick=async()=>{
+ const phone=document.getElementById('phone').value.replace(/\s/g,''); const services=selected();
+ if(!/^09\d{9}$/.test(phone)){status.textContent="شماره موبایل را به شکل 09xxxxxxxxx وارد کنید.";return}
+ if(!services.length){status.textContent="حداقل یک خدمت انتخاب کنید.";return}
+ status.textContent="در حال ارسال...";
+ try{
+   const r=await fetch("/api/send-sms",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone,services})});
+   if(!r.ok) throw new Error();
+   status.textContent="✓ پیام با موفقیت ارسال شد";
+ }catch(e){status.textContent="نسخه نمایشی آماده است؛ برای ارسال واقعی، بک‌اند کاوه‌نگار را فعال کنید."}
+};
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script></body></html>
